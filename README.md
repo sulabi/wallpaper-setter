@@ -13,5 +13,5 @@ Options:
 
 ## Screenshots
 
-![example](https://imgur.com/a/Kwa2Gl7)
+![example](https://imgur.com/kTwZF9m)
 
