@@ -6,12 +6,11 @@ A CLI tool that allows you to set a wallpaper for hyprland using api (wallhaven.
 Usage: wallpaper [OPTIONS]
 
 Options:
-  -w, --wal-type <WAL_TYPE>  wallpaper type to set (anime, other) [default: other]
-  -q, --query <QUERY>        wallpaper query to search [default: ]
-  -p, --pywal                pywal after wallpaper is set
-  -h, --help                 Print help
+- -w, --wal-type <WAL_TYPE>  wallpaper type to set (anime, other) [default: other]
+- -q, --query <QUERY>        wallpaper query to search [default: ]
+- -p, --pywal                pywal after wallpaper is set
+- -h, --help                 Print help
 
 ## Screenshots
 
-![example](https://imgur.com/kTwZF9m)
-
+<img src="screenshot.png">
