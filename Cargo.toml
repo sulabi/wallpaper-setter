@@ -1,0 +1,22 @@
+[package]
+name = "wallpaper_setter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.7", features = ["derive"] }
+tokio = { version = "1.38.0", features = ["full"] }
+futures = "0.3.30"
+reqwest = "0.12.4"
+serde_json = "1.0.117"
+viuer = "0.7.1"
+image = "0.24.9"
+tempfile = "3.10.1"
+bytes = "1.6.0"
+home = "0.5.9"
+hyprland = { git = "https://github.com/hyprland-community/hyprland-rs", branch = "master" }
+dotenvy = "0.15.7"
+
+[[bin]]
+name = "wallpaper"
+path = "src/main.rs"
