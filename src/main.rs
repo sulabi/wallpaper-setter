@@ -8,7 +8,6 @@ use viuer::Config;
 use std::process::Command;
 use hyprland::data::Monitor;
 use hyprland::prelude::*;
-use dotenvy;
 use std::env;
 
 /// A CLI tool that allows you to set a wallpaper for hyprland using api (wallhaven.cc).
@@ -156,7 +155,7 @@ fn apply_pywal(file_path: &str) -> Result<(), Box<dyn Error>> {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    dotenvy::dotenv()?;
+    dotenvy_macro::dotenv!("API_KEY");
 
     let home_dir = home::home_dir().unwrap();
 

@@ -15,7 +15,7 @@ tempfile = "3.10.1"
 bytes = "1.6.0"
 home = "0.5.9"
 hyprland = { git = "https://github.com/hyprland-community/hyprland-rs", branch = "master" }
-dotenvy = "0.15.7"
+dotenvy_macro = "0.15.7"
 
 [[bin]]
 name = "wallpaper"
