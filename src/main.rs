@@ -56,7 +56,7 @@ async fn get_wallpapers(api_key: &str, wall_type: &Category, query: &str, page: 
 
     match result.status() {
         request::StatusCode::OK => {
-            println!("Success!");
+            // println!("Success!");
         },
         _ => {
             eprintln!("Request Error");
@@ -260,9 +260,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let file_name = file_path.file_name().unwrap();
 
     if args.pywal {
+        println!("Applying pywal changes");
         apply_pywal(&file_path_str)?;
     }
     set_wal(&file_path_str, &file_name.to_str().unwrap())?;
+    println!("Set wallpaper");
 
     let mut saved = File::create(home_dir.join(".current_wall.txt"))
         .expect("Coudln't write to file");
