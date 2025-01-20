@@ -5,7 +5,7 @@ use std::{error::Error, io::Write};
 use serde_json::Value;
 use image::load_from_memory;
 use viuer::Config;
-use std::process::Command;
+use std::process::{exit, Command};
 use hyprland::data::Monitor;
 use hyprland::prelude::*;
 use std::env;
@@ -34,7 +34,7 @@ enum Category {
 }
 
 
-async fn get_wallpapers(api_key: &str, wall_type: &Category, query: &str) -> Result<Value, Box<dyn Error>> {
+async fn get_wallpapers(api_key: &str, wall_type: &Category, query: &str, page: i32) -> Result<Value, Box<dyn Error>> {
     let category = match wall_type {
         Category::Anime => "010",
         Category::Other => "100",
@@ -47,8 +47,8 @@ async fn get_wallpapers(api_key: &str, wall_type: &Category, query: &str) -> Res
         _ => "100"
     };
     
-    let url = String::from("https://wallhaven.cc/api/v1/search?sorting=random&resolutions=1920x1080&q=")
-        + format!("&categories={}&purity={}&q={}&apikey={}", category, purity, query, api_key).as_str();
+    let url = String::from("https://wallhaven.cc/api/v1/search?sorting=random&resolutions=1920x1080")
+        + format!("&categories={}&purity={}&q={}&page={}&apikey={}", category, purity, query, page, api_key).as_str();
 
     let result = request::get(url)
         .await
@@ -184,15 +184,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let api_key = env::var("API_KEY").unwrap_or(String::new());
 
-    let wallpapers = get_wallpapers(&api_key, &category, &args.query).await?;
+
+    let mut page = 1;
+    let mut wallpapers = get_wallpapers(&api_key, &category, &args.query, page).await?;
 
     let mut counter = 0;
     let mut current_url = get_wallpaper(&category, &wallpapers, counter);
-    let mut current_img = bytes::Bytes::new();
-    let mut img_src = String::new();
+    let mut current_img: bytes::Bytes;
+    let mut img_src: String;
 
     loop {
+        let wallpaper_count = wallpapers["meta"]["total"].as_i64()
+            .and_then(|total| {
+                wallpapers["meta"]["per_page"].as_i64().map(|per_page| total.min(per_page))
+            })
+            .unwrap_or(0);
+
         if let Some(url) = &current_url {
+            println!("{}", url);
             let (image_bytes, image_source) = fetch_image(url).await?;
             current_img = image_bytes;
             print_wal(&current_img).await?;
@@ -207,8 +216,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 },
                 _ => String::new()
             }
+        } else {
+            if wallpapers["meta"]["per_page"] == counter && page != wallpapers["meta"]["last_page"] {
+                page += 1;
+                counter = 0;
+                println!("going to next page {}", page);
+                wallpapers = get_wallpapers(&api_key, &category, &args.query, page).await?;
+                current_url = get_wallpaper(&category, &wallpapers, counter);
+                continue;
+            } else {
+                println!("{}", if counter == 0 { "There are no results" } else { "There are no more wallpapers" });
+                exit(0);
+            }
+
         }
-        println!("Would you like to set this wallpaper? (y/n)");
+        println!("Would you like to set this wallpaper? ({}/{})({}/{}) (y/n)", counter + 1, wallpaper_count, page, wallpapers["meta"]["last_page"]);
         let mut inp = String::new();
         std::io::stdin().read_line(&mut inp)?;
 
