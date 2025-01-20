@@ -230,7 +230,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
 
         }
-        println!("Would you like to set this wallpaper? ({}/{})({}/{}) (y/n)", counter + 1, wallpaper_count, page, wallpapers["meta"]["last_page"]);
+        match category {
+            Category::OtherAnime => {
+                println!("Would you like to set this wallpaper? (y/n)");
+            },
+            _ => {
+                println!("Would you like to set this wallpaper? ({}/{})({}/{}) (y/n)", counter + 1, wallpaper_count, page, wallpapers["meta"]["last_page"]);
+            }
+
+
+        }
         let mut inp = String::new();
         std::io::stdin().read_line(&mut inp)?;
 
