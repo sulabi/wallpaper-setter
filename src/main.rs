@@ -155,7 +155,7 @@ fn apply_pywal(file_path: &str) -> Result<(), Box<dyn Error>> {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    dotenvy_macro::dotenv!("API_KEY");
+    let api_key = dotenvy_macro::dotenv!("API_KEY");
 
     let home_dir = home::home_dir().unwrap();
 
@@ -180,10 +180,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Category::OtherAnime => "anime_art",
         Category::AnimeNsfw => "nsfw"
     });
-
-
-    let api_key = env::var("API_KEY").unwrap_or(String::new());
-
 
     let mut page = 1;
     let mut wallpapers = get_wallpapers(&api_key, &category, &args.query, page).await?;
