@@ -1,6 +1,6 @@
 use std::{fs, time::Duration, thread, path::PathBuf, env, io::{self, Write}, process::{Output, Command}};
 use home::home_dir;
-use hyprland::data::Monitor;
+use hyprland::data::{Monitors};
 use hyprland::prelude::*;
 
 #[derive(PartialEq, Debug)]
@@ -31,7 +31,7 @@ fn exec(cmd: &str, args: Vec<&str>) -> std::io::Result<Output> {
     Command::new(cmd).args(args).output()
 }
 
-pub fn apply_wallpaper(file_path_str: &str, desktop_env: DesktopEnv) -> io::Result<()> {
+pub fn apply_wallpaper(file_path_str: &str, desktop_env: DesktopEnv, multiple_monitors: bool) -> io::Result<()> {
     match desktop_env {
         DesktopEnv::Gnome => {
             let user = env::var("USER").unwrap_or_else(|_| String::new());
@@ -93,36 +93,46 @@ pub fn apply_wallpaper(file_path_str: &str, desktop_env: DesktopEnv) -> io::Resu
         DesktopEnv::Hyprland => {
             // let hyprland and hyprpaper load up
             while !is_process_running("hyprpaper")? {
+                println!("sleeping");
                 thread::sleep(Duration::from_millis(100));
             }
 
             while String::from_utf8_lossy(&exec("hyprctl", Vec::from([ "hyprpaper" ]))?.stdout).contains("sock") {
+                println!("hyprpaper not running");
                 thread::sleep(Duration::from_millis(100));
             }
 
-            let monitor = match Monitor::get_active() {
-                Ok(monitor) => monitor.name,
-                Err(_) => String::new(),
-            };
 
             Command::new("hyprctl")
                 .args(["hyprpaper", "unload", "all"])
                 .stdout(std::process::Stdio::null())
                 .status()?;
-
-            Command::new("hyprctl")
-                .args(["hyprpaper", "preload", file_path_str])
-                .stdout(std::process::Stdio::null())
-                .status()?;
             
-            Command::new("hyprctl")
-                .args([
-                    "hyprpaper",
-                    "wallpaper",
-                    format!("{},{}", monitor, file_path_str).as_str(),
-                ])
-                .stdout(std::process::Stdio::null())
-                .status()?;
+
+            if let Ok(monitors) = Monitors::get() {
+                for monitor in monitors {
+                    let monitor_name = monitor.name;
+                    Command::new("hyprctl")
+                        .args(["hyprpaper", "preload", file_path_str])
+                        .stdout(std::process::Stdio::null())
+                        .status()?;
+                    
+                    Command::new("hyprctl")
+                        .args([
+                            "hyprpaper",
+                            "wallpaper",
+                            format!("{},{}", monitor_name, file_path_str).as_str(),
+                        ])
+                        .stdout(std::process::Stdio::null())
+                        .status()?;
+
+                    if !multiple_monitors {
+                        break;
+                    }
+
+                }
+            }
+
         }
 
         DesktopEnv::DWM => {

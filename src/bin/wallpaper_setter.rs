@@ -41,6 +41,10 @@ struct Cli {
     /// if using random wallpaper, choose the directory to select from
     #[arg(long, default_value_os_t = utils::get_default_wall_dir())]
     wallpaper_dir: PathBuf,
+
+    /// decide to set the same wallpaper across multiple monitors
+    #[arg(short, long, default_value_t = true)]
+    multiple_monitors: bool
 }
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
@@ -55,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             if args.pywal {
                 utils::apply_pywal(file_path_str)?;
             }
-            utils::apply_wallpaper(file_path_str, desktop_env)?;
+            utils::apply_wallpaper(file_path_str, desktop_env, args.multiple_monitors)?;
         }
     } else {
         if let Some(wallpaper_path) = args.wallpaper_file {
@@ -65,7 +69,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             if args.pywal {
                 utils::apply_pywal(file_path_str)?;
             }
-            utils::apply_wallpaper(file_path_str, desktop_env)?;
+            utils::apply_wallpaper(file_path_str, desktop_env, args.multiple_monitors)?;
         }
 
     }

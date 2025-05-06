@@ -21,7 +21,11 @@ struct Args {
 
     /// pywal after wallpaper is set
     #[arg(short, long, default_value_t = false)]
-    pywal: bool
+    pywal: bool,
+
+    /// decide to set the same wallpaper across multiple monitors
+    #[arg(short, long, default_value_t = true)]
+    multiple_monitors: bool
 }
 
 enum Category {
@@ -69,7 +73,7 @@ async fn get_wallpapers(api_key: &str, wall_type: &Category, query: &str, page: 
 
 fn get_wallpaper(category: &Category, wallpapers: &Value, index: usize) -> Option<String> {
     match category {
-        Category::OtherAnime => Some(String::from("https://pic.re/image")),
+        Category::OtherAnime => Some(String::from("https://pic.re/image?compress=false")),
         _ => {
             if let Some(url) = wallpapers["data"][index]["path"].as_str() {
                 Some(url.to_string())
@@ -85,13 +89,13 @@ async fn fetch_image(url: &str) -> Result<(bytes::Bytes, String), Box<dyn Error>
     let headers = response.headers().clone();
     let image_bytes = response.bytes().await?;
 
-    // let image_source = headers.get("image_source").and_then(|header_value| {
-    //     header_value.to_str().ok().map(|s| format!("{}.png", headers.get("image_id").unwrap().to_str().unwrap(), headers.get("Content-Type").unwrap().to_str().unwrap().split("/").last().unwrap()))
-    // });
+    let image_id = if let Some(id) = headers.get("image_id") {
+        id.to_str().unwrap()
+    } else {
+        ""
+    };
 
-    let image_name = format!("{}.png", headers.get("image_id").unwrap().to_str().unwrap());
-
-    Ok((image_bytes, image_name))
+    Ok((image_bytes, image_id.to_string()))
 }
 
 async fn print_wal(image_bytes: &bytes::Bytes) -> Result<(), Box<dyn Error>> {
@@ -223,7 +227,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("Applying pywal changes");
         utils::apply_pywal(file_path_str)?;
     }
-    utils::apply_wallpaper(&file_path_str, desktop_env)?;
+    utils::apply_wallpaper(&file_path_str, desktop_env, args.multiple_monitors)?;
     println!("Set wallpaper");
 
     let mut saved = File::create(home_dir.join(".current_wall.txt"))
