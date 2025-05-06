@@ -127,14 +127,13 @@ pub fn apply_wallpaper(file_path_str: &str, desktop_env: DesktopEnv) -> io::Resu
 
         DesktopEnv::DWM => {
             Command::new("xwallpaper")
-                .args(["--clear", file_path_str])
+                .args(["--clear"])
                 .stdout(std::process::Stdio::null())
                 .status()?;
             Command::new("xwallpaper")
                 .args(["--zoom", file_path_str])
                 .stdout(std::process::Stdio::null())
                 .status()?;
-
         },
 
         DesktopEnv::Other => todo!()
