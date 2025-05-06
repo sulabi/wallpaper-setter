@@ -80,16 +80,18 @@ fn get_wallpaper(category: &Category, wallpapers: &Value, index: usize) -> Optio
    }
 }
 
-async fn fetch_image(url: &str) -> Result<(bytes::Bytes, Option<String>), Box<dyn Error>> {
+async fn fetch_image(url: &str) -> Result<(bytes::Bytes, String), Box<dyn Error>> {
     let response = request::get(url).await?;
     let headers = response.headers().clone();
     let image_bytes = response.bytes().await?;
 
-    let image_source = headers.get("image_source").and_then(|header_value| {
-        header_value.to_str().ok().map(|s| format!("'{}'.{}", s.to_string().replace("/", "%2F"), headers.get("Content-Type").unwrap().to_str().unwrap().split("/").last().unwrap()))
-    });
+    // let image_source = headers.get("image_source").and_then(|header_value| {
+    //     header_value.to_str().ok().map(|s| format!("{}.png", headers.get("image_id").unwrap().to_str().unwrap(), headers.get("Content-Type").unwrap().to_str().unwrap().split("/").last().unwrap()))
+    // });
 
-    Ok((image_bytes, image_source))
+    let image_name = format!("{}.png", headers.get("image_id").unwrap().to_str().unwrap());
+
+    Ok((image_bytes, image_name))
 }
 
 async fn print_wal(image_bytes: &bytes::Bytes) -> Result<(), Box<dyn Error>> {
@@ -143,7 +145,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut counter = 0;
     let mut current_url = get_wallpaper(&category, &wallpapers, counter);
     let mut current_img: bytes::Bytes;
-    let mut img_src: String;
+    let mut img_id: String;
 
     loop {
         let wallpaper_count = wallpapers["meta"]["total"].as_i64()
@@ -154,20 +156,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         if let Some(url) = &current_url {
             println!("{}", url);
-            let (image_bytes, image_source) = fetch_image(url).await?;
+            let (image_bytes, image_id) = fetch_image(url).await?;
+            img_id = image_id;
             current_img = image_bytes;
             print_wal(&current_img).await?;
-
-            img_src = match category {
-                Category::OtherAnime => {
-                    if let Some(src) = image_source {
-                        src
-                    } else {
-                        String::new()
-                    }
-                },
-                _ => String::new()
-            }
         } else {
             if wallpaper_count as usize == counter && page != wallpapers["meta"]["last_page"] {
                 page += 1;
@@ -206,16 +198,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let url = current_url.unwrap();
     let file_name = match category {
-        Category::OtherAnime => img_src,
+        Category::OtherAnime => format!("{}.png", img_id),
         _ => url.split("/").last().unwrap().to_string()
     };
     let file_path = wallpaper_path.join(file_name);
     
-    let mut file = File::create(&file_path)
-        .expect("Couldn't write to file");
-    file.write_all(&current_img)?;
+    if current_img.starts_with(b"RIFF") && current_img[8..12] == *b"WEBP" {
+        // convert to png if webp image
+        let img = load_from_memory(&current_img)?;
+        img.save(&file_path)?;
+    } else {
+        let mut file = File::create(&file_path)
+            .expect("Couldn't write to file");
+        file.write_all(&current_img)?;
 
-    drop(file); // make sure it's written by closing it
+        drop(file); // make sure it's written by closing it
+    }
+    
     let desktop_env = utils::get_desktop_env();
 
     let file_path_str = file_path.to_str().unwrap();
